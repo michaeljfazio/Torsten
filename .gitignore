@@ -6,3 +6,5 @@
 *.db
 *.log
 node.sock
+db/
+node.sock

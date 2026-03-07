@@ -29,7 +29,7 @@ Follow the Ralph autonomous development loop:
 6. ~~Storage: rollback support~~ ✅ — ChainDB rollback, volatile→immutable flush
 7. **Consensus: real VRF/KES verification** — Currently placeholder
 8. ~~Epoch transitions~~ ✅ — Stake snapshots, reward calculation/distribution, fee tracking
-9. **Node-to-Client protocol** — Local state queries, tx submission
+9. ~~Node-to-Client protocol~~ ✅ — Unix socket server, local state query handler, N2C handshake
 10. **Plutus script execution** — CEK machine for Plutus V1/V2/V3
 11. **Conway governance** — DRep, voting, proposals, constitutional committee
 12. **CLI parity** — Full cardano-cli compatible command set

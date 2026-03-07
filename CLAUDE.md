@@ -28,7 +28,7 @@ Follow the Ralph autonomous development loop:
 5. ~~Upgrade pallas to 1.x~~ ✅ — Pallas 1.0.0-alpha.5 for N2N V14+
 6. ~~Storage: rollback support~~ ✅ — ChainDB rollback, volatile→immutable flush
 7. **Consensus: real VRF/KES verification** — Currently placeholder
-8. **Epoch transitions** — Stake snapshots, reward distribution, nonce computation
+8. ~~Epoch transitions~~ ✅ — Stake snapshots, reward calculation/distribution, fee tracking
 9. **Node-to-Client protocol** — Local state queries, tx submission
 10. **Plutus script execution** — CEK machine for Plutus V1/V2/V3
 11. **Conway governance** — DRep, voting, proposals, constitutional committee

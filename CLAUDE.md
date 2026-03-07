@@ -25,8 +25,8 @@ Follow the Ralph autonomous development loop:
 2. ~~CBOR serialization via pallas~~ ✅
 3. ~~Network client (N2N chain sync)~~ ✅
 4. ~~Ledger: UTxO, validation, certificates, native scripts~~ ✅
-5. **Upgrade pallas to 1.x** — Required for N2N protocol V14+ (current nodes reject V13)
-6. **Storage: rollback support** — ChainDB needs to handle chain rollbacks
+5. ~~Upgrade pallas to 1.x~~ ✅ — Pallas 1.0.0-alpha.5 for N2N V14+
+6. ~~Storage: rollback support~~ ✅ — ChainDB rollback, volatile→immutable flush
 7. **Consensus: real VRF/KES verification** — Currently placeholder
 8. **Epoch transitions** — Stake snapshots, reward distribution, nonce computation
 9. **Node-to-Client protocol** — Local state queries, tx submission

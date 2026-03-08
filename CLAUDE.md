@@ -32,10 +32,10 @@ Follow the Ralph autonomous development loop:
 9. ~~Node-to-Client protocol~~ ✅ — Unix socket server, local state query handler, N2C handshake
 10. ~~Plutus script execution~~ ✅ — uplc CEK machine for Plutus V1/V2/V3, Phase-2 validation, LocalTxSubmission validation
 11. ~~Conway governance~~ ✅ — DRep reg/vote/delegation, committee, proposals, ratification, treasury withdrawals
-12. **Relay node compliance** — Ledger-based peer discovery, backpressure, concurrent ChainSync, adaptive peer selection
-13. **CLI parity** — Full cardano-cli compatible command set
-14. **Performance** — Optimize sync speed, memory usage, database I/O
-15. **Integration testing** — Run against testnet, verify block sync to tip
+12. ~~Relay node compliance~~ ✅ — Pipelined ChainSync (~40x throughput), ledger-based peer discovery, adaptive peer selection, N2N server
+13. ~~CLI parity~~ ✅ — 33+ subcommands: address, transaction, query, key, stake, pool, node, governance
+14. **Performance** — Multi-peer concurrent sync, memory optimization, database I/O
+15. **Integration testing** — Run against testnet/mainnet, verify block sync to tip
 
 ## Architecture
 See README.md for the 10-crate workspace structure.

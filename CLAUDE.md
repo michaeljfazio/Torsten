@@ -34,7 +34,7 @@ Follow the Ralph autonomous development loop:
 11. ~~Conway governance~~ ✅ — DRep reg/vote/delegation, committee, proposals, ratification, treasury withdrawals
 12. ~~Relay node compliance~~ ✅ — Pipelined ChainSync (~40x throughput), ledger-based peer discovery, adaptive peer selection, N2N server
 13. ~~CLI parity~~ ✅ — 33+ subcommands: address, transaction, query, key, stake, pool, node, governance
-14. **Performance** — Multi-peer concurrent sync, memory optimization, database I/O
+14. ~~Performance~~ ✅ — HashMap UTxO/ledger lookups, batched volatile writes, O(n) reward distribution, zero-copy block storage
 15. **Integration testing** — Run against testnet/mainnet, verify block sync to tip
 
 ## Architecture

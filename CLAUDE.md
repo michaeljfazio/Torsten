@@ -30,11 +30,12 @@ Follow the Ralph autonomous development loop:
 7. ~~Consensus: structural validation~~ ✅ — KES period, VRF output, opcert checks (crypto VRF/KES pending)
 8. ~~Epoch transitions~~ ✅ — Stake snapshots, reward calculation/distribution, fee tracking
 9. ~~Node-to-Client protocol~~ ✅ — Unix socket server, local state query handler, N2C handshake
-10. **Plutus script execution** — CEK machine for Plutus V1/V2/V3
-11. **Conway governance** — DRep, voting, proposals, constitutional committee
-12. **CLI parity** — Full cardano-cli compatible command set
-13. **Performance** — Optimize sync speed, memory usage, database I/O
-14. **Integration testing** — Run against testnet, verify block sync to tip
+10. ~~Plutus script execution~~ ✅ — uplc CEK machine for Plutus V1/V2/V3, Phase-2 validation, LocalTxSubmission validation
+11. ~~Conway governance~~ ✅ — DRep reg/vote/delegation, committee, proposals, ratification, treasury withdrawals
+12. **Relay node compliance** — Ledger-based peer discovery, backpressure, concurrent ChainSync, adaptive peer selection
+13. **CLI parity** — Full cardano-cli compatible command set
+14. **Performance** — Optimize sync speed, memory usage, database I/O
+15. **Integration testing** — Run against testnet, verify block sync to tip
 
 ## Architecture
 See README.md for the 10-crate workspace structure.
@@ -44,3 +45,10 @@ See README.md for the 10-crate workspace structure.
 - `Transaction.hash` field is set during deserialization from `pallas tx.hash()`
 - `ChainSyncEvent::RollForward` uses `Box<Block>` to avoid large enum variant size
 - Invalid transactions (`is_valid: false`) are skipped during `apply_block`
+- N2N server uses `BlockProvider` trait for storage abstraction
+- N2C server uses `TxValidator` trait for Phase-1/Phase-2 tx validation before mempool admission
+- Batch block storage: `add_blocks_batch()` for single immutable flush per batch
+- Ledger-based peer discovery: extracts SPO relay addresses from `pool_params` when past `useLedgerAfterSlot`
+- `PoolRegistration` stores relay info (SingleHostAddr, SingleHostName, MultiHostName)
+- Epoch transitions use mark/set/go snapshot model with reward distribution from "go" snapshot
+- Governance ratification: DRep/SPO/CC voting thresholds vary by action type (CIP-1694)

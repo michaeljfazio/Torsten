@@ -19,6 +19,12 @@
 - maxPool function: `libs/cardano-ledger-core/src/.../State/SnapShots.hs`
 - Pool desirability: `shelley/impl/src/.../Shelley/PoolRank.hs`
 
+## Critical: ln' uses continued fraction, NOT Taylor series
+- See [nonintegral-ln-algorithm.md](nonintegral-ln-algorithm.md)
+- Torsten's fp_ln uses Taylor series -> different truncation -> boundary disagreements
+- Haskell uses exact Rational for sigma/f; Torsten uses f64 -> precision loss
+- activeSlotLog precomputed once via ln', not per-block
+
 ## Topic Files
 - [pparams-group-classification.md](pparams-group-classification.md) - Conway PP group classification (Network/Economic/Technical/Gov/Security), threshold combination logic
 - [conway-validation-rules.md](conway-validation-rules.md) - Complete validation rules, predicate failures, reward formula, epoch transition order
@@ -33,6 +39,7 @@
 - [era-history-wire-format.md](era-history-wire-format.md) - GetInterpreter/GetEraHistory: query=[2,0,[2,2,[1,0]]], response=list of EraSummary (no HFC wrapper), Bound/EraParams/SafeZone encoding, RelativeTime=Pico integer, SlotLength=milliseconds
 - [epoch-nonce-calculation.md](epoch-nonce-calculation.md) - Praos epoch nonce: PraosState fields, per-block update, epoch boundary computation, stability windows, Torsten bugs
 - [vrf-leader-check.md](vrf-leader-check.md) - VRF leader eligibility: checkLeaderValue, taylorExpCmp, FixedPoint E34, certNat/certNatMax, exact algorithm
+- [block-forging-flow.md](block-forging-flow.md) - Complete block forging: slot tick→leader check→tx selection→body hash→header→KES sign, all key files and Torsten body hash bug
 
 ## N2C Key Facts
 - Shelley query CBOR tags: 40 queries (0-39), see n2c-protocol-details.md

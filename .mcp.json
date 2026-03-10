@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "koios": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/michaelfazio/Source/koios-mcp/dist/index.js"
+      ],
+      "env": {
+        "KOIOS_NETWORK": "preview"
+      }
+    }
+  }
+}

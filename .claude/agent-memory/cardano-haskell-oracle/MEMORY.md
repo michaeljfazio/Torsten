@@ -66,6 +66,8 @@
 - [vrf-leader-check.md](vrf-leader-check.md) - VRF leader eligibility: checkLeaderValue, taylorExpCmp, FixedPoint E34, certNat/certNatMax, exact algorithm
 - [block-forging-flow.md](block-forging-flow.md) - Complete block forging: slot tick→leader check→tx selection→body hash→header→KES sign, all key files and Torsten body hash bug
 - [utxo-hd-snapshot-format.md](utxo-hd-snapshot-format.md) - UTxO-HD in-memory backend snapshot: version wrapper array(2)[1,ext], HFC telescope, per-era version array(2)[2,...], NewEpochState array(7), EMPTY UTxO in state file, tables written separately
+- [query-version2-wire-format.md](query-version2-wire-format.md) - QueryVersion2 three-level nesting: Query(tag 0-4) → HFC(tag 0-2) → NS(era_idx, shelley_tag), EitherMismatch wrapping rules, golden test hex values
+- [ledger-peer-snapshot-encoding.md](ledger-peer-snapshot-encoding.md) - GetLedgerPeerSnapshot (tag 34): V1/V2/V3 wire format, relay CBOR, Rational encoding, big vs all peers
 
 ## N2C Key Facts
 - Shelley query CBOR tags: 40 queries (0-39), see n2c-protocol-details.md
@@ -73,6 +75,11 @@
 - N2C mini-protocol IDs: Handshake=0, ChainSync=5, TxSubmission=6, StateQuery=7, TxMonitor=12
 - N2C ChainSync sends full blocks (not headers), wrapped as [era_id, CBOR_tag_24(block_bytes)]
 - NodeToClientVersion V16-V19=QueryVersion2, V20-V23=QueryVersion3
+- **V21 PParams change**: ProtVer encodes as array(2)[major,minor] instead of two flat ints (Shelley-Babbage only; Conway unchanged). Field count drops by 1 for each pre-Conway era.
+- **V21 new queries**: GetPoolDistr2 (tag 36, new PoolDistr type), GetStakeDistribution2 (tag 37), GetMaxMajorProtVersion (tag 38)
+- **V21 removed**: GetStakeDistribution (tag 5) and GetPoolDistr (tag 21) rejected for V21+ clients
+- **GetStakeDistribution2** returns new SL.PoolDistr = array(2)[pool_map, total_active_stake_int]; IndividualPoolStake is array(3)[rational, compact_coin_u64, vrf_hash_32bytes]
+- See [n2c-version-v17-v22-changes.md](n2c-version-v17-v22-changes.md) for full version change table
 
 ## ouroboros-network Repo Structure (main branch)
 - Protocol types: `ouroboros-network/protocols/lib/Ouroboros/Network/Protocol/<Proto>/Type.hs`

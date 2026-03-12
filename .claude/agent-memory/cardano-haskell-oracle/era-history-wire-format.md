@@ -23,16 +23,20 @@ Direct encoding: `[4, <list_of_era_summaries>]` (MsgResult tag + raw list)
 - Bounded: Bound encoding (same as above)
 - Unbounded: CBOR null (0xf6)
 
-## EraParams = array(4) (pre-Peras) or array(5)
-`[epoch_size, slot_length, safe_zone, genesis_window]`
+## EraParams = array(4) (pre-Peras) or array(5) (Peras)
+`[epoch_size, slot_length, safe_zone, genesis_window]` (+ peras_round_length if 5)
 - epoch_size: Word64
 - slot_length: Integer in MILLISECONDS (1s = 1000)
 - safe_zone: see below
-- genesis_window: Word64
+- genesis_window: Word64 (= k * 2, NOT null)
 
-## SafeZone
-- StandardSafeZone(n): `[3, 0, n, [1, 0]]` — [1,0] is legacy compat field
-- UnsafeIndefiniteSafeZone: `[1, 1]`
+## SafeZone (Haskell Serialise instance in EraParams.hs)
+- StandardSafeZone(n): `array(3) [0, n, array(1)[0]]`
+  - tag=0, value n, then legacy SafeBeforeEpoch compat field array(1)[0]
+  - Decoder also accepts legacy (2,1) format with EpochNo
+- UnsafeIndefiniteSafeZone: `array(1) [1]`
+  - JUST tag=1 in a 1-element array. NOT array(2)[1,1]
+- Error "SafeZone: invalid size and tag (2,1)" means array(2) with tag 1 — wrong, must be array(1)
 
 ## Key Source Files
 - Summary.hs: Bound/EraEnd/EraSummary/Summary Serialise instances

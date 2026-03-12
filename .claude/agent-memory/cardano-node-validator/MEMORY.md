@@ -4,8 +4,8 @@
 - Node binary: `./target/release/torsten-node`
 - CLI binary: `./target/release/torsten-cli`
 - Config dir: `./config/` (preview-config.json, preview-topology.json)
-- Preview DB: `./db-preview/` — slot ~106.4M, block ~4.09M
-- Ledger snapshot: `<db>/ledger-snapshot.bin`
+- Preview DB: `./db-preview/` — slot ~106.686M, block ~4.1018M, epoch 1234
+- Ledger snapshot: `<db>/ledger-snapshot.bin` (~1,111 MB)
 - Node logs: `/tmp/torsten-validation-run.log`
 
 ## Startup Command Pattern
@@ -21,54 +21,80 @@ TORSTEN_PIPELINE_DEPTH=150 ./target/release/torsten-node run \
 NOTE: Always `pkill -f torsten-node && rm -f ./node.sock` before restart.
 NOTE: Delete `db-preview/ledger-snapshot.bin` to force fresh replay with genesis seeding.
 
-## Preview Testnet Baselines (2026-03-10)
-- DB at slot ~106.4M / block ~4.09M / epoch 1232
-- Peers: 13.58.19.0, 3.70.89.92, 99.80.240.19, 52.211.202.88, 3.74.40.92 (8 known, 5 hot)
-- N2N handshake: ~566-740ms, version 14
-- Ledger replay speed (full 4M block replay): ~16,303 blocks/sec
-- Final UTxO count after full replay: 2,935,708 at snapshot, 2,936,107 at tip
-- Final snapshot size: ~1,165 MB
+## Preview Testnet Baselines (2026-03-13, v0.1.0-alpha.10 — commit 05e3f38)
+- DB at slot ~106.691M / block ~4.1020M / epoch 1234
+- Peer connected: 3.70.89.92:3001 rtt_ms=749 (5 hot peers total)
+- Snapshot load time: ~8 seconds (no replay, instant)
+- Snapshot size: 1111.4 MB, 2,937,499 UTxOs at start, 2,937,531 at shutdown
+- Catch-up from snapshot to tip: 88 blocks in ~8s (was 28 blocks in ~18s)
+- At-tip block frequency: new blocks every ~20-60s, some with txs (txs=1)
+- Flush on SIGTERM: 93 volatile blocks flushed → 5.3s snapshot save → clean shutdown
+- No warnings, no errors, no panics in full run
 
-## VRF Stake Bug — CRITICAL UNRESOLVED (commit ca423d7, 2026-03-10)
-- lncf (Euler CF) fix did NOT resolve VRF rejections — bug is in stake accounting, not math
-- Pool pool1ynfnjspgckgxjf2zeye8s33jz3e3ndk9pcwp0qzaupzvvd8ukwt rejected at slot 106474747
-- Torsten relative_stake = 0.000588 (0.059%) vs Koios actual = 0.0601 (6.0%)
-- 102x undercount of per-pool stake fraction causes strict VRF rejection
-- After first rejection, node stalls permanently ("does not connect to tip" cascade)
-- Snapshot CLI shows 55M ADA set stake for this pool; the fraction implies only ~575k ADA is used
-- Koios epoch 1232 total active_stake: 1,177,946,537 ADA; Torsten: 977,890,873 ADA (17% under)
-- Root cause: stake_distribution.stake_map (UTxO tracking) does not fully accumulate stake
-  for all delegated credentials → pool_stake in epoch snapshots is systematically undercounted
-- See `vrf-rejection-analysis.md` for full analysis
+## Prometheus Metrics Port Conflict Note
+- Haskell cardano-node also runs on `localhost:12798` (127.0.0.1 only)
+- Torsten binds to `*:12798` (all interfaces)
+- `curl http://localhost:12798/metrics` hits the HASKELL node (more specific binding wins)
+- Use `curl http://192.168.1.111:12798/metrics` (LAN IP) to reach Torsten metrics
+- Or: kill the Haskell node before running Torsten for exclusive port access
 
-## Known Issues (Current — 2026-03-10)
-1. **CRITICAL: VRF rejections cause chain liveness failure**
-   - set_snapshot.pool_stake is ~96-102x too low per pool relative to Koios
-   - VRF threshold 96x too small → valid blocks rejected → node stalls permanently at tip
-   - Fix needed: trace why stake_distribution.stake_map values are so much smaller than on-chain
-   - The 17% total undercount (977B vs 1177B lovelace) suggests reward accounts not included
-     OR stake_map entries missing for many delegators (not registered before delegation)
-2. **Conway governance PP parameter updates only partially applied**
-   - non-HardFork PP changes (executionUnits, committeeMinSize) not all applied
-3. **`query tip` returns zeros immediately after startup** — race condition (wait for replay)
-4. **`query stake-pools` garbled data** — CLI decoder mismatch
+## N2C Client Bug: Large Response Reassembly (2026-03-13, OPEN)
+- **BUG**: `recv_segment()` in `crates/torsten-network/src/n2c_client.rs:687` only handles ONE mux segment
+- Fix needed: collect multiple segments with same protocol_id until CBOR is complete
+- Queries affected: `query drep-state` and `query pool-params` (and any large response)
+- Error message: `Error: Failed to query DRep state: Protocol error: response too large`
+- Root cause: fixed 65536-byte buffer; responses >65535 bytes need multi-segment reassembly
+- The send path already handles chunking (`encode()` splits payloads), but recv does not reassemble
+- Buffer at line 688: `let mut buf = vec![0u8; 65536];`
 
-## Working Features Confirmed (2026-03-10, full 4M replay)
-- Build: WORKS — clean, zero warnings
-- Genesis UTxO seeding: WORKS — 1 UTxO seeded, grows to 2.9M during replay
-- Peer connections: 5 peers established
-- Ledger replay: WORKS — no panics, 4.09M blocks in 251 seconds at 16,303 b/s
-- Epoch transitions: WORKS (1,232 transitions)
-- Pre-Conway PPUP: v6→7 at epoch 3, v7→8 at epoch 22, v8→9 at epoch 646
-- Conway governance HardFork: v9→10 at epoch 743
-- Rollback handling: WORKS
-- N2C query tip / protocol-parameters: WORKS
-- Prometheus metrics: WORKS — sync_progress_percent: 10000 (100%)
+## Storage Architecture (post-redesign, commit 83c4f11)
+- ImmutableDB: append-only `.chunk` + `.secondary` files (db-preview/immutable/)
+- tip.meta file tracks immutable tip (binary: slot u64 BE + hash32 + block_no u64 BE)
+- VolatileDB: in-memory HashMap, last k=2160 blocks, LOST ON RESTART
+- ChainDB: routes volatile→immutable for blocks deeper than k
+- UtxoStore: cardano-lsm in `db-preview/snapshots/latest/` for UTxO-HD (on-disk UTxO set)
+- Ledger snapshot: bincode-serialized LedgerState, epoch-numbered + latest symlink
+
+## FIXED: Shutdown Flush (2026-03-13, validated multiple runs)
+- On SIGTERM: volatile blocks flushed to ImmutableDB FIRST, then snapshot saved
+- Log sequence: "Flushed volatile blocks to ImmutableDB blocks=N" → "Snapshot saved" → "Shutdown complete"
+- On restart: snapshot loads in ~7-9 seconds (NO replay) — confirmed working
+- File: `crates/torsten-storage/src/chain_db.rs` line 417 (flush_all_to_immutable)
+- File: `crates/torsten-node/src/node.rs` line ~1547 (shutdown flow)
+
+## Known Issues (Current — 2026-03-13, v0.1.0-alpha.8)
+1. **N2C large response reassembly** — `recv_segment` only handles one 65535-byte segment
+   - Affects: `query drep-state`, `query pool-params`
+   - File: `crates/torsten-network/src/n2c_client.rs:687`
+2. **N2C Broken Pipe warnings** — observed after failed queries (broken pipe on client disconnect)
+   - `WARN torsten_network::n2c: N2C connection error: IO error: Broken pipe (os error 32)`
+   - Not critical — client disconnects after a failed query; server handles it gracefully
+3. **Conway governance PP parameter updates only partially applied** (ongoing)
+
+## Working Features Confirmed (2026-03-13, v0.1.0-alpha.10 validation, commit 05e3f38)
+- Build: WORKS — clean, zero warnings, compiles in 33s (incremental)
+- Snapshot load (restart): WORKS — 8s load time, no replay
+- Peer connections: WORKS — 3.134.226.73:3001 rtt_ms=590
+- Catch-up to tip: WORKS — 28 blocks applied in ~18s
+- At-tip block reception: WORKS — Conway blocks every ~20-60s
+- All protocol version upgrades: WORKS (Byron→Conway historical replay confirmed)
+- N2C query tip: WORKS — syncProgress=100.00%, era=Conway
+- N2C protocol-parameters: WORKS — full Conway PParams with Plutus V1/V3 cost models
+- N2C stake-distribution: WORKS — 755 pools listed with fractions
+- N2C gov-state: WORKS — committee_members=1, active_proposals=2
+- N2C treasury: WORKS — Treasury=42.3B ADA, Reserves=2.6B ADA
+- N2C committee-state: WORKS — 1 active member
+- N2C constitution: WORKS (empty/null on preview)
+- N2C stake-snapshot: WORKS — mark/set/go stakes for all 755 pools
+- Prometheus metrics: WORKS — http://localhost:12798/metrics (Haskell-compatible format)
+- SIGTERM shutdown: WORKS — flushes 37 volatile blocks, saves 1111.4 MB snapshot
 
 ## Operational Notes
 - Always `--testnet-magic 2` with CLI query tip for correct syncProgress
 - N2N port 3001 / Metrics port 12798 — conflict if old node running
 - No `torsten-config.json` — use `config/preview-config.json` directly
-- Delete ledger-snapshot.bin to trigger fresh replay with genesis UTxO seeding
-- `TORSTEN_REPLAY_LIMIT=0` skips replay (old behavior, node works at tip but wrong ledger state)
+- On restart after clean SIGTERM: snapshot loads in ~7-9 seconds (NO replay) — FIXED
+- On restart after crash/SIGKILL: still does full replay (~110s) — volatile data lost without flush
+- `TORSTEN_REPLAY_LIMIT=0` skips replay (old behavior, wrong ledger state)
 - Snapshot grows to ~1.1GB with full UTxO state
+- CLI subcommand is `query treasury` (not `query account-state`)

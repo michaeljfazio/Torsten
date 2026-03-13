@@ -392,7 +392,16 @@ telescope7<...>
 
 - PeerSharing mini-protocol: no documentation
 - NTC Handshake: no documentation
-- NTC LocalTxSubmission: no documentation
+- NTC LocalTxSubmission: no documentation in Blueprint. Authoritative sources:
+  - CDDL: `cardano-diffusion/protocols/cddl/specs/local-tx-submission.cddl` (ouroboros-network repo)
+  - Codec (CBOR encoding): `ouroboros-network/protocols/lib/.../LocalTxSubmission/Codec.hs`
+  - Type.hs: `ouroboros-network/protocols/lib/.../LocalTxSubmission/Type.hs`
+  - Conway rejection type: `eras/conway/impl/src/Cardano/Ledger/Conway.hs` — `newtype ApplyTxError ConwayEra = ConwayApplyTxError (NonEmpty (ConwayLedgerPredFailure ConwayEra))`
+  - ConwayLedgerPredFailure CBOR: `eras/conway/impl/src/.../Rules/Ledger.hs` — tags 1-9
+  - ConwayUtxowPredFailure CBOR: `eras/conway/impl/src/.../Rules/Utxow.hs` — tags 0-18
+  - Sum encoding rule: `encodeListLen (fieldCount + 1) <> encodeWord tag` (from cardano-ledger-binary Coders.hs)
+  - MsgRejectTx wire: array(2) [uint(2), rejectReason] where rejectReason = CBOR array of 1+ ConwayLedgerPredFailure
+  - No HFC wrapper on reject payload; tx in MsgSubmitTx uses ns7 era-dispatch with tag 24
 - NTC TxMonitor: no documentation
 - NTC LocalChainSync: no documentation
 - KeepAlive body is TODO
